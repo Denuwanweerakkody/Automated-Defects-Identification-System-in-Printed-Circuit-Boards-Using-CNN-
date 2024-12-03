@@ -207,13 +207,20 @@ class VideoInferenceApp(QMainWindow):
         self.open_button.setCursor(Qt.PointingHandCursor)
         self.open_button.clicked.connect(self.open_video)
 
+        # Open Camera Button
+        self.open_camera_button = QPushButton("Open Camera")
+        self.open_camera_button.setStyleSheet(button_style)
+        self.open_camera_button.setCursor(Qt.PointingHandCursor)
+        self.open_camera_button.clicked.connect(self.open_camera)  # Connect to open_camera method
+
+
         self.snapshot_button = QPushButton("Take Snapshot")
-        self.snapshot_button.setStyleSheet(f"background-color: {SECONDARY_COLOR}; color: {TEXT_COLOR}; padding: 12px; font-size: 16px; border-radius: 5px; border: 1px solid {BORDER_COLOR};")
+        self.snapshot_button.setStyleSheet(f"background-color: {PRIMARY_COLOR}; color: {TEXT_COLOR}; padding: 12px; font-size: 16px; border-radius: 5px; border: 1px solid {BORDER_COLOR};")
         self.snapshot_button.setCursor(Qt.PointingHandCursor)
         self.snapshot_button.clicked.connect(self.save_snapshot)
 
         self.open_folder_button = QPushButton("Open Images Folder")
-        self.open_folder_button.setStyleSheet(f"background-color: {WARNING_COLOR}; color: {TEXT_COLOR}; padding: 12px; font-size: 16px; border-radius: 5px; border: 1px solid {BORDER_COLOR};")
+        self.open_folder_button.setStyleSheet(f"background-color: {PRIMARY_COLOR}; color: {TEXT_COLOR}; padding: 12px; font-size: 16px; border-radius: 5px; border: 1px solid {BORDER_COLOR};")
         self.open_folder_button.setCursor(Qt.PointingHandCursor)
         self.open_folder_button.clicked.connect(self.open_images_folder)
 
@@ -226,6 +233,7 @@ class VideoInferenceApp(QMainWindow):
         # Sidebar for Defect List
         sidebar_layout = QVBoxLayout()
         sidebar_layout.addWidget(self.open_button)
+        sidebar_layout.addWidget(self.open_camera_button)
         sidebar_layout.addWidget(self.snapshot_button)
         sidebar_layout.addWidget(self.open_folder_button)
         sidebar_layout.addWidget(self.analyze_button)
@@ -270,9 +278,26 @@ class VideoInferenceApp(QMainWindow):
 
         self.csv_file = "defect_data.csv"
         if not os.path.exists(self.csv_file):
-            with open(self.csv_file, "w", newline="") as file:
+            with open(self.csv_file, "w", newline="\n") as file:
                 writer = csv.writer(file)
                 writer.writerow(["Timestamp", "Defect Type"])
+
+    def open_camera(self):
+        # Open the first available camera (0 for default webcam)
+        self.cap = cv2.VideoCapture(0)
+
+        if not self.cap.isOpened():
+            print("Error: Could not open camera.")
+            return
+
+        # Reset the frame count
+        self.frame_count = 0
+
+        # Clear the defect list
+        self.defect_list.clear()
+
+        # Start updating the frames every 30 milliseconds (adjust as needed)
+        self.timer.start(30)
 
     def open_video(self):
         # Open file dialog to select video file
@@ -282,6 +307,9 @@ class VideoInferenceApp(QMainWindow):
             self.frame_count = 0
             self.defect_list.clear()
             self.timer.start(30)  # Start timer for updating frames
+
+    
+
 
     def update_frame(self):
         if self.cap and self.cap.isOpened():
@@ -297,10 +325,10 @@ class VideoInferenceApp(QMainWindow):
                 pil_image = Image.fromarray(frame_rgb)
 
                 # Perform inference on the resized frame
-                result = CLIENT.infer(pil_image, model_id="pcb-defect-detection-ryztp/1")
+                result = CLIENT.infer(pil_image, model_id="pcb-defect-detection-9ewqw/1")
                 draw = ImageDraw.Draw(pil_image)
 
-                # Clear defect list for current frame
+                # Clear defect list for the current frame
                 self.defect_list.clear()
 
                 # Annotate each prediction and save to CSV
@@ -324,7 +352,7 @@ class VideoInferenceApp(QMainWindow):
                     label = f"{class_name}: {confidence:.2f}"
                     draw.text((left, top - 20), label, fill="white", font=font)
 
-                    # Add defect to sidebar list
+                    # Add defect to the sidebar list
                     self.defect_list.addItem(f"{class_name} (Confidence: {confidence:.2f})")
 
                     # Collect unique defects
@@ -348,6 +376,7 @@ class VideoInferenceApp(QMainWindow):
 
             self.frame_count += 1
 
+
     def save_snapshot(self):
         if self.cap and self.cap.isOpened():
             snapshot_path = os.path.join(self.images_folder, f"snapshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
@@ -367,6 +396,7 @@ class VideoInferenceApp(QMainWindow):
         if self.cap:
             self.cap.release()
         event.accept()
+
 
 # Run the application
 if __name__ == "__main__":
