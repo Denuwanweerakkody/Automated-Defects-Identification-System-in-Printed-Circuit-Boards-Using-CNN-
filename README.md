@@ -4,3 +4,4 @@ step 01 - Downloard pcb-defect-detection file and run it. need to downloard the 
 step 02 - create pcbdetection.PT and downloard it. 
 step 03 - make a new folder and create a path and open cmd on that exact path. 
 step 04 - pip install inference-sdk pillow, open-cv python and defect_detectorapp.
+step 05 - creat a roboflow platform and creat a cloudbased interface.
